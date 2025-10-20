@@ -22,6 +22,9 @@
   },
   "entity": {
     "select": {
+      "video_mode": {
+        "name": "Video Mode"
+      },
       "platform": {
         "name": "Platform",
         "state": {
