@@ -67,9 +67,11 @@ class SmartVideoHub(asyncio.Protocol):
                     elif current_block == "INPUT LABELS":
                         input_number = int(line.split(" ", 1)[0]) + 1
                         input_label = line.split(" ", 1)[1].strip()
-                        self.inputs.setdefault(input_number, input_label)
+                        self.inputs[input_number] = input_label
                         if input_label != "Input " + str(input_number):
-                            self.filtered_inputs.setdefault(input_number, input_label)
+                            self.filtered_inputs[input_number] = input_label
+                        elif input_number in self.filtered_inputs:
+                            del self.filtered_inputs[input_number]
                         _LOGGER.debug("Named input %i as %s", input_number, input_label)
                     elif current_block == "OUTPUT LABELS":
                         output_number = int(line.split(" ", 1)[0]) + 1
@@ -189,16 +191,19 @@ class SmartVideoHub(asyncio.Protocol):
             self._transport.write(command.encode("ascii"))
 
     def set_input_by_name(self, outputNumber, inputName):
-        input_list = self.get_input_list()
-        if inputName in input_list and self._connected:
-            self.set_input(outputNumber, input_list.index(inputName) + 1)
-            return True
-        else:
+        if not self._connected:
             _LOGGER.debug(
-                "Input %s was not found in the list of inputs or the server was disconnected",
-                inputName,
+                "Cannot set input %s: server is disconnected", inputName
             )
             return False
+        for input_number, label in self.inputs.items():
+            if label == inputName:
+                self.set_input(outputNumber, input_number)
+                return True
+        _LOGGER.debug(
+            "Input %s was not found in the list of inputs", inputName
+        )
+        return False
 
     def get_input_list(self, filter_inputs=False) -> list[str]:
         # Convert the dictionary to a list - remove the last value which seems to be a default object
@@ -217,7 +222,7 @@ class SmartVideoHub(asyncio.Protocol):
         if input_number in self.inputs:
             return self.inputs[input_number]
         else:
-            return "Ínput %d" % input_number
+            return "Input %d" % input_number
 
     def get_selected_input(self, output_number):
         if output_number in self.outputs:
