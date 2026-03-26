@@ -80,7 +80,7 @@ class SmartVideoHubOutput(MediaPlayerEntity):
         self._attr_unique_id = f"smartvideohub_output_{self._output_id}"
         self.entity_id = async_generate_entity_id(
             ENTITY_ID_FORMAT,
-            entity_prefix + " output " + str(self._output_id),
+            output.get("name", "output_" + str(output_number)),
             hass=hass,
         )
         self._attr_device_info = deviceInfo
