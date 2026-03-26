@@ -49,13 +49,19 @@ class SmartVideoHub(asyncio.Protocol):
 
     def data_received(self, data):
         """asyncio callback when data is received on the socket"""
-        self._buffer += data.decode("utf-8")
+        chunk = data.decode("utf-8")
+        _LOGGER.debug(
+            "TCP chunk received: %i bytes, buffer was %i bytes\n%s",
+            len(chunk), len(self._buffer), chunk.replace("\r", "\\r").replace("\n", "\\n\n")
+        )
+        self._buffer += chunk
         # Only process complete lines; keep any trailing incomplete line in the buffer
         while "\n" in self._buffer:
             line, self._buffer = self._buffer.split("\n", 1)
             line = line.rstrip("\r")
             # Blank lines indicate the end of a block
             if not line.strip():
+                _LOGGER.debug("End of block: %s", self._current_block)
                 self._current_block = None
             else:
                 search = re.search("([A-Z ]+):$", line)
@@ -63,8 +69,12 @@ class SmartVideoHub(asyncio.Protocol):
 
                 if search:
                     self._current_block = search.group(1)
-                    _LOGGER.debug("Parsing block %s", self._current_block)
+                    _LOGGER.debug("New block: %s", self._current_block)
                     if self._current_block == "END PRELUDE":
+                        _LOGGER.info(
+                            "Prelude complete — inputs: %i, outputs: %i",
+                            len(self.inputs), len(self.outputs)
+                        )
                         self.initialised.set()
                         self._send_update_callback(output_id=0)
                 elif self._current_block == "INPUT LABELS":
@@ -75,7 +85,7 @@ class SmartVideoHub(asyncio.Protocol):
                         self.filtered_inputs[input_number] = input_label
                     elif input_number in self.filtered_inputs:
                         del self.filtered_inputs[input_number]
-                    _LOGGER.debug("Named input %i as %s", input_number, input_label)
+                    _LOGGER.debug("Input %i = '%s'", input_number, input_label)
                     if self.initialised.is_set():
                         self._send_update_callback(output_id=0)
                 elif self._current_block == "OUTPUT LABELS":
@@ -83,9 +93,7 @@ class SmartVideoHub(asyncio.Protocol):
                     output_label = line.split(" ", 1)[1].strip()
                     self.outputs[output_number]["name"] = output_label
                     self.outputs[output_number]["output"] = output_number
-                    _LOGGER.debug(
-                        "Named output %i as %s", output_number, output_label
-                    )
+                    _LOGGER.debug("Output %i = '%s'", output_number, output_label)
                     if self.initialised.is_set():
                         self._send_update_callback(output_id=output_number)
                 elif self._current_block == "VIDEO OUTPUT ROUTING":
@@ -94,7 +102,8 @@ class SmartVideoHub(asyncio.Protocol):
                     self.outputs[output_id]["input"] = input_id
                     self.outputs[output_id]["input_name"] = self.get_input_name(input_id)
                     _LOGGER.debug(
-                        "Output %i is now displaying input %i", output_id, input_id
+                        "Routing output %i -> input %i ('%s')",
+                        output_id, input_id, self.get_input_name(input_id)
                     )
                     if self.initialised.is_set():
                         self._send_update_callback(output_id=output_id)
@@ -137,6 +146,13 @@ class SmartVideoHub(asyncio.Protocol):
                         self.teranex_set[line_conf[0]] = line_conf[1].strip()
                     if self.initialised.is_set():
                         self._send_update_callback(output_id=0)
+                else:
+                    if self._current_block is not None:
+                        _LOGGER.debug("Unhandled line in block '%s': %s", self._current_block, line)
+                    else:
+                        _LOGGER.debug("Line received outside any block: %s", line)
+        if self._buffer:
+            _LOGGER.debug("Partial line remaining in buffer (%i bytes): %s", len(self._buffer), self._buffer)
 
 
     def connection_lost(self, exc):
