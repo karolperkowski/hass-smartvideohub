@@ -73,6 +73,8 @@ class SmartVideoHub(asyncio.Protocol):
                         elif input_number in self.filtered_inputs:
                             del self.filtered_inputs[input_number]
                         _LOGGER.debug("Named input %i as %s", input_number, input_label)
+                        if self.initialised.is_set():
+                            self._send_update_callback(output_id=0)
                     elif current_block == "OUTPUT LABELS":
                         output_number = int(line.split(" ", 1)[0]) + 1
                         output_label = line.split(" ", 1)[1].strip()
@@ -81,6 +83,8 @@ class SmartVideoHub(asyncio.Protocol):
                         _LOGGER.debug(
                             "Named output %i as %s", output_number, output_label
                         )
+                        if self.initialised.is_set():
+                            self._send_update_callback(output_id=output_number)
                     elif current_block == "VIDEO OUTPUT ROUTING":
                         output_id = int(line.split(" ", 1)[0]) + 1
                         input_id = int(line.split(" ", 1)[1]) + 1

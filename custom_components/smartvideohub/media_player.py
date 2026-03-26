@@ -119,7 +119,7 @@ class SmartVideoHubOutput(MediaPlayerEntity):
 
     def update_callback(self, output_id=0):
         """Called when data is received by pySmartVideoHub"""
-        if output_id == 0 | output_id == self._output_id:
+        if output_id == 0 or output_id == self._output_id:
             _LOGGER.info("SmartVideoHub sent a status update for output %i", output_id)
             self.update()
             self.schedule_update_ha_state(False)
