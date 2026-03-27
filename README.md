@@ -106,6 +106,22 @@ shortcuts:
 
 ---
 
+## Diagnostics
+
+A diagnostics snapshot can be downloaded from the device page:
+
+**Settings → Devices & Services → Smart Video Hub → device → Download Diagnostics**
+
+The download includes:
+- Integration config and options (host IP is redacted)
+- Device info: name, model, connection status
+- Full input list with labels
+- Full output routing table (output name, routed input ID and name)
+
+This is useful for bug reports or verifying the integration is seeing the correct state.
+
+---
+
 ## Debugging
 
 Enable debug logging via **Settings → Devices & Services → Smart Video Hub → Configure** and set Log level to `debug`. No restart required.

@@ -170,6 +170,7 @@ Example: `media_player.7c2e0d0a2d90_1w6_12_tv1`
 ## Known Unresolved Items
 
 - `brands/` directory with `icon.png` not yet added (required for HACS default store submission, not needed for custom repo)
+- Diagnostics redacts the host IP — if you want it included for local debugging you can temporarily remove `CONF_HOST` from `TO_REDACT` in `diagnostics.py`
 - `quad16_output_17` and `quad16_output_18` in the QUAD 16x1 Config dashboard card belong to a separate non-Videohub device — entity IDs need to be confirmed by checking the HA entity registry
 
 ---
