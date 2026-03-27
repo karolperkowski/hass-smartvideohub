@@ -72,8 +72,8 @@ class SmartVideoHubOutput(MediaPlayerEntity):
         self._smartvideohub = smartvideohub
         self._output_id = output_number
         self._output_name = output.get("name", "Output %d" % output_number)
-        self._attr_source_source_name = smartvideohub.get_input_name(output_number)
         self._source_id = output["input"]
+        self._attr_source = smartvideohub.get_input_name(self._source_id)
         self._connected = smartvideohub.connected
         self._hide_default_inputs = hide_default_inputs
         self._attr_source_list = smartvideohub.get_input_list(self._hide_default_inputs)
@@ -91,6 +91,7 @@ class SmartVideoHubOutput(MediaPlayerEntity):
         self._output_name = self._smartvideohub.get_outputs()[self._output_id].get("name")
         self._source_id = self._smartvideohub.get_selected_input(self._output_id)
         self._attr_source = self._smartvideohub.get_input_name(self._source_id)
+        self._connected = self._smartvideohub.connected
         self._attr_source_list = self._smartvideohub.get_input_list(
             self._hide_default_inputs
         )
@@ -102,11 +103,12 @@ class SmartVideoHubOutput(MediaPlayerEntity):
 
     @property
     def state(self):
-        """Return the state of the zone."""
-        if self._connected:
-            return "playing"
-        else:
-            return "off"
+        """Return the current source as the state."""
+        if not self._connected:
+            return MediaPlayerState.OFF
+        if self._attr_source:
+            return self._attr_source
+        return MediaPlayerState.ON
 
     @property
     def media_title(self) -> str | None:
