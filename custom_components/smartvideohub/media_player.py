@@ -74,7 +74,7 @@ class SmartVideoHubOutput(MediaPlayerEntity):
         self._connected = smartvideohub.connected
         self._hide_default_inputs = hide_default_inputs
         self._attr_source_list = smartvideohub.get_input_list(hide_default_inputs)
-        self._attr_unique_id = f"smartvideohub_{entity_prefix}_output_{output_number}"
+        self._attr_unique_id = f"smartvideohub_output_{output_number}"
         self.entity_id = async_generate_entity_id(
             ENTITY_ID_FORMAT,
             (entity_prefix + " " if entity_prefix else "") + output.get("name", "output_" + str(output_number)),
