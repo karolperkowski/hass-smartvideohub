@@ -8,7 +8,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up SmartVideoHub Device"""
-    dev = hass.data[DOMAIN][config_entry.entry_id]['client']
+    dev = config_entry.runtime_data.client
 
     device_info = DeviceInfo(
         identifiers={(DOMAIN, config_entry.entry_id)},
@@ -79,4 +79,4 @@ class StreamingSwitchDevice(SwitchEntity):
 
     def update_callback(self, output_id=0):
         """Called when data is received by pySmartVideoHub"""
-        self.schedule_update_ha_state(False)
+        self.async_write_ha_state()

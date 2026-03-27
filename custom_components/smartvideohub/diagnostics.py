@@ -17,7 +17,7 @@ async def async_get_config_entry_diagnostics(
     config_entry: ConfigEntry,
 ) -> dict[str, Any]:
     """Return diagnostics for a config entry."""
-    client = hass.data[DOMAIN][config_entry.entry_id]["client"]
+    client = config_entry.runtime_data.client
 
     return {
         "config_entry": async_redact_data(config_entry.data, TO_REDACT),

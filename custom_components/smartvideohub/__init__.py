@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from dataclasses import dataclass
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -20,36 +21,33 @@ PLATFORMS = [
 _LOGGER = logging.getLogger(__name__)
 
 
-async def _async_remove_orphaned_entities(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
-    """Remove entity registry entries left behind by the temporary MAC-prefixed unique_id.
+@dataclass
+class SmartVideoHubData:
+    """Runtime data stored on the config entry."""
+    client: SmartVideoHub
 
-    During development the unique_id was briefly changed from
-    'smartvideohub_output_N' to 'smartvideohub_<MAC>_output_N', creating
-    duplicate registry entries. This cleans them up on first run after
-    reverting so users don't have to delete 40 entities manually.
-    """
+
+type SmartVideoHubConfigEntry = ConfigEntry[SmartVideoHubData]
+
+
+async def _async_remove_orphaned_entities(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    """Remove entity registry entries left behind by the temporary MAC-prefixed unique_id."""
     registry = er.async_get(hass)
     unique_id = None
 
-    # Find the MAC address from any existing correctly-formed entry
-    # so we know what prefix to look for
     for entity in er.async_entries_for_config_entry(registry, config_entry.entry_id):
         if entity.unique_id and entity.unique_id.startswith("smartvideohub_output_"):
-            # Extract MAC from entity_id if possible (e.g. media_player.7c2e0d0a2d90_...)
             parts = entity.entity_id.split(".")
             if len(parts) == 2:
                 object_id = parts[1]
-                # MAC is the first 12 hex chars
                 candidate = object_id[:12]
                 if len(candidate) == 12 and all(c in "0123456789abcdef" for c in candidate):
                     unique_id = candidate
                     break
 
     if not unique_id:
-        # Try to get it from attrs stored during a previous run
         for entity in er.async_entries_for_config_entry(registry, config_entry.entry_id):
             if entity.unique_id and "_output_" in entity.unique_id and entity.unique_id.count("_") > 2:
-                # Looks like 'smartvideohub_7c2e0d0a2d90_output_N'
                 unique_id = entity.unique_id.split("_")[1]
                 break
 
@@ -60,7 +58,7 @@ async def _async_remove_orphaned_entities(hass: HomeAssistant, config_entry: Con
     removed = 0
     for entity in er.async_entries_for_config_entry(registry, config_entry.entry_id):
         if entity.unique_id and entity.unique_id.startswith(orphan_prefix):
-            _LOGGER.info("Removing orphaned entity registry entry: %s (%s)", entity.entity_id, entity.unique_id)
+            _LOGGER.info("Removing orphaned entity: %s (%s)", entity.entity_id, entity.unique_id)
             registry.async_remove(entity.entity_id)
             removed += 1
 
@@ -68,38 +66,31 @@ async def _async_remove_orphaned_entities(hass: HomeAssistant, config_entry: Con
         _LOGGER.info("Removed %i orphaned entity registry entries", removed)
 
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, config_entry: SmartVideoHubConfigEntry) -> bool:
     """Set up Smart Video Hub from a config entry."""
-    hass.data.setdefault(DOMAIN, {})
-
-    # Apply saved log level from options
     log_level_name = config_entry.options.get(CONF_LOG_LEVEL, DEFAULT_LOG_LEVEL)
     log_level = LOG_LEVELS.get(log_level_name, logging.WARNING)
     logging.getLogger("custom_components.smartvideohub").setLevel(log_level)
 
-    # Clean up any orphaned entities from the temporary MAC-prefixed unique_id
     await _async_remove_orphaned_entities(hass, config_entry)
 
-    smartvideohub = SmartVideoHub(
+    client = SmartVideoHub(
         config_entry.data[CONF_HOST],
         config_entry.data[CONF_PORT],
     )
-    smartvideohub.start()
-    await smartvideohub.initialised.wait()
+    client.start()
+    await client.initialised.wait()
 
-    hass.data[DOMAIN][config_entry.entry_id] = {
-        "client": smartvideohub,
-    }
+    config_entry.runtime_data = SmartVideoHubData(client=client)
 
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: SmartVideoHubConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        hass.data[DOMAIN][entry.entry_id]["client"].stop()
-        hass.data[DOMAIN].pop(entry.entry_id)
+        entry.runtime_data.client.stop()
     return unload_ok

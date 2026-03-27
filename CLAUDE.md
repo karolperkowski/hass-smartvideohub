@@ -167,6 +167,17 @@ Example: `media_player.7c2e0d0a2d90_1w6_12_tv1`
 
 ---
 
+## HA API Compliance
+
+The integration targets current HA best practices as of early 2026:
+
+- **`config_entry.runtime_data`** — used instead of deprecated `hass.data[DOMAIN]` for storing the client instance. Typed via `SmartVideoHubData` dataclass and `SmartVideoHubConfigEntry` type alias.
+- **`ConfigFlowResult`** — used instead of deprecated `FlowResult` from `homeassistant.data_entry_flow`
+- **`OptionsFlow`** — no longer stores `config_entry` explicitly; uses `self.config_entry` from the parent class (required since HA 2025.12)
+- **`async_write_ha_state()`** — used instead of `schedule_update_ha_state(False)` in all update callbacks
+
+---
+
 ## Known Unresolved Items
 
 - `brands/` directory with `icon.png` not yet added (required for HACS default store submission, not needed for custom repo)
