@@ -4,8 +4,10 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
+import logging
+
 from .pyvideohub import SmartVideoHub
-from .const import DOMAIN, CONF_HOST, CONF_PORT
+from .const import DOMAIN, CONF_HOST, CONF_PORT, CONF_LOG_LEVEL, LOG_LEVELS, DEFAULT_LOG_LEVEL
 
 PLATFORMS = [
     Platform.MEDIA_PLAYER,
@@ -19,6 +21,11 @@ PLATFORMS = [
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up Smart Video Hub from a config entry."""
     hass.data.setdefault(DOMAIN, {})
+
+    # Apply saved log level from options
+    log_level_name = config_entry.options.get(CONF_LOG_LEVEL, DEFAULT_LOG_LEVEL)
+    log_level = LOG_LEVELS.get(log_level_name, logging.WARNING)
+    logging.getLogger("custom_components.smartvideohub").setLevel(log_level)
 
     smartvideohub = SmartVideoHub(
         config_entry.data[CONF_HOST],

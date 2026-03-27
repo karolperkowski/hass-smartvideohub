@@ -21,6 +21,19 @@
       "unknown": "An unexpected error occurred."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Smart Video Hub Options",
+        "data": {
+          "log_level": "Log level"
+        },
+        "data_description": {
+          "log_level": "Controls how much detail is logged. Use 'debug' to troubleshoot connection or parsing issues."
+        }
+      }
+    }
+  },
   "entity": {
     "select": {
       "video_mode": {
