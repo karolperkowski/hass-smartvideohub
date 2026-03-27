@@ -2,7 +2,7 @@ import logging
 
 from homeassistant.components.switch import ENTITY_ID_FORMAT, SwitchEntity, SwitchDeviceClass
 from homeassistant.helpers.entity import async_generate_entity_id, DeviceInfo
-from .const import *
+from .const import DOMAIN, MODEL_VIDEOHUB, MODEL_STREAMING, MODEL_TERANEX
 
 _LOGGER = logging.getLogger(__name__)
 

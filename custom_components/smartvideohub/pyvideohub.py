@@ -3,8 +3,6 @@ import logging
 import re
 import collections
 
-from asyncio import ensure_future
-
 _LOGGER = logging.getLogger(__name__)
 SERVER_RECONNECT_DELAY = 30
 
@@ -13,7 +11,7 @@ MODEL_STREAMING = "Streaming"
 MODEL_TERANEX = "TERANEX"
 
 class SmartVideoHub(asyncio.Protocol):
-    def __init__(self, host, port, loop=None):
+    def __init__(self, host, port):
         self._cmdServer = host
         self._cmdServerPort = port
         self._transport = None
@@ -21,6 +19,7 @@ class SmartVideoHub(asyncio.Protocol):
         self._errorMessage = None
         self._connected = False
         self._connecting = False
+        self._stopped = False
         self.initialised = asyncio.Event()
         self.inputs = dict()
         self.filtered_inputs = dict()
@@ -34,10 +33,6 @@ class SmartVideoHub(asyncio.Protocol):
         self._buffer = ""
         self._current_block = None
 
-        if loop:
-            _LOGGER.debug("Latching onto an existing event loop")
-            self._eventLoop = loop
-
     def connection_made(self, transport):
         """asyncio callback for a successful connection."""
         _LOGGER.debug("Connected to Black Magic Smart Video Hub API")
@@ -46,6 +41,7 @@ class SmartVideoHub(asyncio.Protocol):
         self._connecting = False
         self._buffer = ""
         self._current_block = None
+        asyncio.get_event_loop().create_task(self.keep_alive())
 
     def data_received(self, data):
         """asyncio callback when data is received on the socket"""
@@ -156,39 +152,36 @@ class SmartVideoHub(asyncio.Protocol):
 
 
     def connection_lost(self, exc):
-        """asyncio callback for a lost TCP connection"""
+        """asyncio callback for a lost TCP connection."""
         self._connected = False
-        self.initialised.set()
+        self.initialised.clear()
         self._send_update_callback()
         _LOGGER.error("Connection to the server lost")
         if not self._stopped:
-            self.connect()
+            _LOGGER.info("Reconnecting in %i seconds", SERVER_RECONNECT_DELAY)
+            asyncio.get_event_loop().call_later(SERVER_RECONNECT_DELAY, self.connect)
 
     def connect(self):
-        _LOGGER.info(
-            str.format(
-                "Connecting to Smart Video Hub at {0}:{1}",
-                self._cmdServer,
-                self._cmdServerPort,
-            )
-        )
+        """Initiate a TCP connection to the device."""
+        _LOGGER.info("Connecting to Smart Video Hub at %s:%s", self._cmdServer, self._cmdServerPort)
         self._connecting = True
-        coro = self._eventLoop.create_connection(
+        loop = asyncio.get_event_loop()
+        coro = loop.create_connection(
             lambda: self, self._cmdServer, self._cmdServerPort
         )
-        return ensure_future(coro)
+        return loop.create_task(coro)
 
     def start(self):
-        """Public method for initiating connectivity with the envisalink."""
-        self.connect()
+        """Connect to the device and start the keep-alive loop."""
         self._stopped = False
-        _LOGGER.info("Connected to server")
+        self.connect()
 
     def stop(self):
-        """Public method for shutting down connectivity with the envisalink."""
+        """Disconnect from the device."""
         self._connected = False
         self._stopped = True
-        self._transport.close()
+        if self._transport:
+            self._transport.close()
 
     def _send_update_callback(self, output_id=False):
         """Internal method to notify all update callback subscribers."""

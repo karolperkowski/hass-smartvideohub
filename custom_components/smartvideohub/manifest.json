@@ -2,11 +2,11 @@
   "domain": "smartvideohub",
   "name": "Smart Video Hub",
   "config_flow": true,
-  "documentation": "https://github.com/jnimmo/hass-smartvideohub/",
-  "issue_tracker": "https://github.com/jnimmo/hass-smartvideohub/issues",
+  "documentation": "https://github.com/karolperkowski/hass-smartvideohub/",
+  "issue_tracker": "https://github.com/karolperkowski/hass-smartvideohub/issues",
   "dependencies": [],
-  "codeowners": [],
+  "codeowners": ["@karolperkowski"],
   "requirements": [],
   "iot_class": "local_push",
-  "version": "0.0.1"
+  "version": "0.1.0"
 }
