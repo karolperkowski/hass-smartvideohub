@@ -12,7 +12,7 @@ from homeassistant.components.media_player import (
 )
 from homeassistant.helpers.entity import async_generate_entity_id, DeviceInfo
 
-from .const import DOMAIN, MODEL_VIDEOHUB, CONF_HIDE_DEFAULT_INPUTS
+from .const import DOMAIN, CONF_HOST, MODEL_VIDEOHUB, CONF_HIDE_DEFAULT_INPUTS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,6 +26,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         name=dev.name,
         manufacturer="Blackmagic Design",
         model=dev.model,
+        configuration_url=f"http://{config_entry.data[CONF_HOST]}",
     )
 
     if dev.model == MODEL_VIDEOHUB:

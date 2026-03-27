@@ -114,6 +114,12 @@ During development the `unique_id` was briefly changed from `smartvideohub_outpu
 
 ### `select.py`, `button.py`, `switch.py`, `text.py`
 - Replaced wildcard `from .const import *` with explicit imports
+- Fixed manufacturer spelling ("BlackMagic Design" → "Blackmagic Design")
+- Normalised `deviceInfo` variable name to `device_info`
+- Added `CONF_HOST` import and `configuration_url` to `DeviceInfo`
+
+### All platform files (`media_player.py`, `select.py`, `switch.py`, `button.py`, `text.py`)
+- `DeviceInfo` now includes `configuration_url=f"http://{host}"` so the device page in HA shows a clickable link to the device's web interface and displays the IP address
 
 ### `manifest.json`
 - Updated URLs to fork

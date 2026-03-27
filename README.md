@@ -32,7 +32,7 @@ After installation, add the integration via **Settings → Devices & Services �
 
 | Field | Required | Default | Description |
 |---|---|---|---|
-| Host | Yes | — | IP address of the device |
+| Host | Yes | — | IP address of the device. Also shown in the device info page with a link to the web interface |
 | Port | No | 9990 | TCP port (9990 for all models) |
 
 ---

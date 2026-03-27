@@ -2,7 +2,7 @@ import logging
 
 from homeassistant.components.select import ENTITY_ID_FORMAT, SelectEntity
 from homeassistant.helpers.entity import async_generate_entity_id, DeviceInfo
-from .const import DOMAIN, MODEL_VIDEOHUB, MODEL_STREAMING, MODEL_TERANEX
+from .const import DOMAIN, CONF_HOST, MODEL_VIDEOHUB, MODEL_STREAMING, MODEL_TERANEX
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -10,11 +10,12 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up SmartVideoHub Device"""
     dev = hass.data[DOMAIN][config_entry.entry_id]['client']
 
-    deviceInfo = DeviceInfo(
+    device_info = DeviceInfo(
         identifiers={(DOMAIN, config_entry.entry_id)},
-        name= dev.name,
-        manufacturer="BlackMagic Design",
-        model=dev.model
+        name=dev.name,
+        manufacturer="Blackmagic Design",
+        model=dev.model,
+        configuration_url=f"http://{config_entry.data[CONF_HOST]}",
     )
     if dev.model == MODEL_STREAMING:
         async_add_entities(
@@ -23,19 +24,19 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
                     hass,
                     dev,
                     "platform",
-                    deviceInfo
+                    device_info
                 ),
                 StreamingSelectDevice(
                     hass,
                     dev,
                     "quality_level",
-                    deviceInfo
+                    device_info
                 ),
                 StreamingSelectDevice(
                     hass,
                     dev,
                     "video_mode",
-                    deviceInfo
+                    device_info
                 )
             ],
             True,
@@ -47,7 +48,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
                     hass,
                     dev,
                     "lut",
-                    deviceInfo
+                    device_info
                 )
             ],
             True,
@@ -62,7 +63,7 @@ class StreamingSelectDevice(SelectEntity):
         hass,
         dev,
         translation_key,
-        deviceInfo
+        device_info
     ):
         """Initialize new zone."""
         self._dev = dev
@@ -72,7 +73,7 @@ class StreamingSelectDevice(SelectEntity):
             dev.attrs.get("Unique ID", "")+"/"+translation_key,
             hass=hass,
         )
-        self._attr_device_info = deviceInfo
+        self._attr_device_info = device_info
         dev.add_update_callback(self.update_callback)
 
     def _split_option(self, key: str, store: dict) -> list[str]:
