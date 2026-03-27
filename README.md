@@ -6,7 +6,7 @@ Home Assistant integration for Blackmagic Design video routing devices, includin
 - **Blackmagic Web Presenter** (streaming control)
 - **Teranex Mini** (LUT and video output control)
 
-The integration connects over raw TCP and updates Home Assistant in real time whenever routing changes are made on the device or elsewhere.
+The integration connects over raw TCP on port 9990 and updates Home Assistant in real time whenever routing changes are made on the device or from any other controller.
 
 ---
 
@@ -35,11 +35,15 @@ After installation, add the integration via **Settings → Devices & Services �
 | Host | Yes | — | IP address of the device |
 | Port | No | 9990 | TCP port (9990 for all models) |
 
-### Options
+---
+
+## Options
+
+After setup, click **Configure** on the integration card to access options.
 
 | Option | Description |
 |---|---|
-| Hide default inputs | When enabled, inputs that have not been renamed from their factory default (e.g. `Input 1`) are hidden from source lists |
+| Log level | Controls integration verbosity. Use `debug` to troubleshoot connection or parsing issues. No restart required. |
 
 ---
 
@@ -48,7 +52,8 @@ After installation, add the integration via **Settings → Devices & Services �
 ### Smart Videohub (40x40, 12x12, etc.)
 
 Each output port becomes a **media player** entity with:
-- **State**: Name of the currently routed input
+
+- **State**: Name of the currently routed input (e.g. `TMAINT-01`)
 - **Source select**: Route any input to this output
 - **Source list**: All available inputs
 
@@ -67,12 +72,53 @@ Entity IDs follow the format `media_player.<mac>_<output_label>`, e.g. `media_pl
 
 ---
 
-## Tips
+## Dashboard
 
-- Works well with [mini-media-player](https://github.com/kalkih/mini-media-player) for source selection on dashboards
-- The integration reconnects automatically after a 30-second delay if the TCP connection is lost
-- A keepalive ping is sent every 120 seconds to maintain the connection
-- All label changes made directly on the device are reflected in Home Assistant in real time
+The integration works well with [mini-media-player](https://github.com/kalkih/mini-media-player) for a source selection UI. Example card:
+
+```yaml
+type: custom:mini-media-player
+entity: media_player.7c2e0d0a2d90_1w6_12_tv1
+source: full
+icon: mdi:television-box
+hide:
+  power: true
+  power_state: true
+  controls: true
+  volume: true
+shortcuts:
+  label: Source
+  columns: 3
+  buttons:
+    - name: TXMAINT-01
+      type: source
+      id: TXMAINT-01
+```
+
+---
+
+## Behaviour
+
+- **Real-time updates**: Routing and label changes made on the device or by other controllers are reflected immediately in HA
+- **Reconnection**: If the TCP connection is lost, the integration waits 30 seconds then reconnects automatically
+- **Keepalive**: A PING is sent every 120 seconds to keep the connection alive
+- **TCP buffering**: Data is buffered correctly across multiple TCP chunks, so large hubs with many inputs/outputs (e.g. 40x40) are fully supported
+
+---
+
+## Debugging
+
+Enable debug logging via **Settings → Devices & Services → Smart Video Hub → Configure** and set Log level to `debug`. No restart required.
+
+Alternatively, add to `configuration.yaml`:
+
+```yaml
+logger:
+  logs:
+    custom_components.smartvideohub: debug
+```
+
+Debug output includes TCP chunk sizes, block transitions, every parsed input/output label, routing entries, and prelude completion summary.
 
 ---
 
@@ -81,4 +127,4 @@ Entity IDs follow the format `media_player.<mac>_<output_label>`, e.g. `media_pl
 Tested with:
 - Blackmagic Smart Videohub 40x40
 
-Should work with any device that supports the Blackmagic Videohub TCP protocol on port 9990.
+Should work with any device supporting the Blackmagic Videohub TCP protocol on port 9990.
