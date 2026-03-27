@@ -41,7 +41,7 @@ class SmartVideoHub(asyncio.Protocol):
         self._connecting = False
         self._buffer = ""
         self._current_block = None
-        asyncio.get_event_loop().create_task(self.keep_alive())
+        asyncio.get_running_loop().create_task(self.keep_alive())
 
     def data_received(self, data):
         """asyncio callback when data is received on the socket"""
@@ -159,13 +159,13 @@ class SmartVideoHub(asyncio.Protocol):
         _LOGGER.error("Connection to the server lost")
         if not self._stopped:
             _LOGGER.info("Reconnecting in %i seconds", SERVER_RECONNECT_DELAY)
-            asyncio.get_event_loop().call_later(SERVER_RECONNECT_DELAY, self.connect)
+            asyncio.get_running_loop().call_later(SERVER_RECONNECT_DELAY, self.connect)
 
     def connect(self):
         """Initiate a TCP connection to the device."""
         _LOGGER.info("Connecting to Smart Video Hub at %s:%s", self._cmdServer, self._cmdServerPort)
         self._connecting = True
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         coro = loop.create_connection(
             lambda: self, self._cmdServer, self._cmdServerPort
         )
@@ -183,7 +183,7 @@ class SmartVideoHub(asyncio.Protocol):
         if self._transport:
             self._transport.close()
 
-    def _send_update_callback(self, output_id=False):
+    def _send_update_callback(self, output_id=0):
         """Internal method to notify all update callback subscribers."""
         if not self._updateCallbacks:
             _LOGGER.debug("Update callback has not been set by client")
@@ -223,7 +223,6 @@ class SmartVideoHub(asyncio.Protocol):
         return False
 
     def get_input_list(self, filter_inputs=False) -> list[str]:
-        # Convert the dictionary to a list - remove the last value which seems to be a default object
         if filter_inputs:
             return list(self.filtered_inputs.values())
         else:
@@ -292,14 +291,14 @@ class SmartVideoHub(asyncio.Protocol):
         self._transport.write(command.encode("ascii"))
 
     def set_lut(self, lut_id):
-        if isinstance(lut_id, int) and int(lut_id) == 1:
-            lut = "Lut 0"
-        elif isinstance(lut_id, int) and int(lut_id) == 2:
-            lut = "Lut 1"
-        elif isinstance(lut_id, int):
-            lut = "none"
-        elif isinstance(lut_id, str):
+        if isinstance(lut_id, str):
             lut = lut_id
+        elif isinstance(lut_id, int) and lut_id == 1:
+            lut = "Lut 0"
+        elif isinstance(lut_id, int) and lut_id == 2:
+            lut = "Lut 1"
+        else:
+            lut = "none"
         command = "VIDEO OUTPUT:\nLut on loop: true\nLut selection: %s\n\n" % lut
         self._transport.write(command.encode("ascii"))
 
