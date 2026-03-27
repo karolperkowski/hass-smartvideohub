@@ -1,7 +1,4 @@
 {
-    "name": "Smart Video Hub",
-    "domains": [
-        "media_player"
-    ],
-    "render_readme": true
+  "name": "Smart Video Hub",
+  "render_readme": true
 }

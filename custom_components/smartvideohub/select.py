@@ -75,24 +75,34 @@ class StreamingSelectDevice(SelectEntity):
         self._attr_device_info = deviceInfo
         dev.add_update_callback(self.update_callback)
 
+    def _split_option(self, key: str, store: dict) -> list[str]:
+        """Safely split a comma-separated option string, returning [] if not yet available."""
+        value = store.get(key)
+        if not value:
+            return []
+        return [v.strip() for v in value.split(",") if v.strip()]
+
     def update(self):
         """Retrieve latest state."""
+        is_idle = self._dev.stream_state.get("Status") == "Idle" and self._dev.connected
         if self._attr_translation_key == "platform":
             self._attr_current_option = self._dev.stream_set.get("Current Platform")
-            self._attr_options = self._dev.stream_set.get("Available Default Platforms").split(", ") + \
-                                 self._dev.stream_set.get("Available Custom Platforms").split(", ")
-            self._attr_available = self._dev.stream_state.get("Status") == "Idle" and self._dev.connected
+            self._attr_options = (
+                self._split_option("Available Default Platforms", self._dev.stream_set) +
+                self._split_option("Available Custom Platforms", self._dev.stream_set)
+            )
+            self._attr_available = is_idle
         elif self._attr_translation_key == "video_mode":
             self._attr_current_option = self._dev.stream_set.get("Video Mode")
-            self._attr_options = self._dev.stream_set.get("Available Video Modes").split(", ")
-            self._attr_available = self._dev.stream_state.get("Status") == "Idle" and self._dev.connected
+            self._attr_options = self._split_option("Available Video Modes", self._dev.stream_set)
+            self._attr_available = is_idle
         elif self._attr_translation_key == "quality_level":
             self._attr_current_option = self._dev.stream_set.get("Current Quality Level")
-            self._attr_options = self._dev.stream_set.get("Available Quality Levels").split(", ")
-            self._attr_available = self._dev.stream_state.get("Status") == "Idle" and self._dev.connected
+            self._attr_options = self._split_option("Available Quality Levels", self._dev.stream_set)
+            self._attr_available = is_idle
         elif self._attr_translation_key == "lut":
-            self._attr_options = ["none"]
-            self._attr_options.extend(["Lut %d" % x for x in range(int(self._dev.teranex_set.get("Number of LUTs")))])
+            num_luts = int(self._dev.teranex_set.get("Number of LUTs", 0))
+            self._attr_options = ["none"] + ["Lut %d" % x for x in range(num_luts)]
             self._attr_current_option = self._dev.teranex_set.get("Lut selection", "none")
             self._attr_available = self._dev.connected
 

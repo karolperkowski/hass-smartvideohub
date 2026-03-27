@@ -46,7 +46,7 @@ class StreamingInputDevice(TextEntity):
         self._attr_mode = TextMode.TEXT
         self._attr_unique_id = async_generate_entity_id(
             ENTITY_ID_FORMAT,
-            dev.attrs.get("Unique ID")+"/"+translation_key,
+            dev.attrs.get("Unique ID", "")+"/"+translation_key,
             hass=hass,
         )
         self._attr_available = False
